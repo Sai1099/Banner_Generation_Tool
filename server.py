@@ -21,7 +21,7 @@ import time
 
 
 
-st.set_page_config(page_title="Banner Creation Tool",page_icon="BAJAJFINSV.NS.png",layout="wide")
+st.set_page_config(page_title="Banner Creation Tool",page_icon="main_logo.png",layout="wide")
 #------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------
