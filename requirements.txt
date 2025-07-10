@@ -1,0 +1,13 @@
+langchain-google-genai 
+dotenv
+pandas
+pandasql
+langchain
+streamlit 
+easydev
+Pillow
+numpy
+requests
+chromadb
+sentence-transformers
+gradio-client
