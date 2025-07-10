@@ -381,8 +381,8 @@ with d_lef:
 
 
                 client = chromadb.CloudClient(
-                    api_key=os.getenv("CHROMEDB"),
-                    tenant=os.getenv("CHROMETENENT"),
+                    api_key="ck-78tRNWSAkwpJ6szDmFFwkehi46q2FZb2v4Unz37zpT7w",
+                    tenant="4a4205c1-adf8-4989-8824-39983b450e41",
                     database='Banner_Description_Recomm'
                 )
 
