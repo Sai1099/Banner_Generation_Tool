@@ -8,6 +8,7 @@ easydev
 Pillow
 numpy
 requests
-chromadb
+chromadb>=0.4.0
+protobuf>=4.21.0
 sentence-transformers
 gradio-client
