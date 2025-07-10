@@ -9,6 +9,9 @@ import json
 import requests
 from PIL import Image,ImageOps,ImageDraw,ImageFont
 from io import BytesIO
+import sys
+import pysqlite3
+sys.modules['sqlite3'] = pysqlite3
 import chromadb
 from sentence_transformers import SentenceTransformer
 from gradio_client import Client,handle_file

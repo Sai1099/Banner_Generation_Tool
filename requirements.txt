@@ -12,3 +12,4 @@ numpy==1.26.4
 chromadb==0.4.24
 sentence-transformers
 gradio-client
+pysqlite3-binary
