@@ -9,7 +9,7 @@ Pillow
 requests
 protobuf==3.20.3
 numpy==1.26.4
-chromadb==0.4.24
+chromadb==0.6.1
 sentence-transformers
 gradio-client
 pysqlite3-binary
