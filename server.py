@@ -48,6 +48,8 @@ d_lef,d_rig = st.columns(2)
 with d_lef:
  st.subheader("Enter_Credentials")
  API_KEY = st.text_input("Enter your GOOGLE_API_KEYS to continue generation:",type="password")
+ if API_KEY:
+     st.toast("✅ Initialized Successfully")
  
  if st.subheader("Tags"):
   data_bussiness = data_driv_df["Suggested Banner Type"].unique().tolist()
@@ -195,6 +197,7 @@ with d_rig:
    Please ensure the AI response returns equal-length lists for all fields.
    """
     )
+    st.toast("⚠️ Click Again The Generate Tags Button.")
   else:
        st.warning("Not generated")
 
@@ -306,7 +309,7 @@ with d_rig:
             return sharedurls
         
         try:
-            with st.spinner("Generating image..."):
+            with st.spinner("🍞 Generating Banners"):
              if number_of_images:
               threadings = []
               for t in range(number_of_images):
@@ -317,6 +320,7 @@ with d_rig:
                  t.join()
               if "shared_urls" not in st.session_state:
                      st.session_state["shared_urls"] = sharedurls
+                     st.toast("✅ Banners Generated")
         except TimeoutError as e:
             st.error({e})
 with d_rig:
@@ -364,6 +368,8 @@ with d_lef:
         
         if not selected:
             st.warning("No images selected. Please select at least one image.")
+        if not selected and generate_text_overlay_content_btn and text_overlay_prompt:
+            st.toast("⚠️ Select the Images to continue")
         if selected and generate_text_overlay_content_btn and text_overlay_prompt:
             len_selected = st.session_state.get("length_total_records", 0)
             if len_selected >= 1:
@@ -516,8 +522,10 @@ with d_lef:
                        
                         select_option = st.radio(label=" ",options=[f"{i+1} " + data[f"title{i+1}"] + " "+" \n" + data[f"description{i+1}"] + "\n" for i in range(3)])  
                         if "sel_opt" not in st.session_state:
-                            st.session_state["sel_opt"] = select_option  
-        generate_text_on_the_image = st.button("Generate Text Based Banner")           
+                            st.session_state["sel_opt"] = select_option 
+    st.text("if quota is not exceeded place the primary API_KEY if exceeds uses the secondary API_KEY from another Account") 
+    TEXT_OVERLAY_API_KEY = st.text_input("Enter the Gemini API KEY For TextOverlay",type="password")
+    generate_text_on_the_image = st.button("Generate Text Based Banner")           
                 
 
 with d_rig:
@@ -525,9 +533,10 @@ with d_rig:
     length_total_rec = st.session_state.get("length_total_records")
     select_option = st.session_state.get("sel_opt")
 
-    if select_option and generate_text_on_the_image:
+    if select_option and generate_text_on_the_image and TEXT_OVERLAY_API_KEY:
         if length_total_rec >= 1:
             for i, image_ in enumerate(selected):
+              with st.spinner("💥 Adding Text Overlay To Images.."):
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as ttmpfile:
                     ttmpfile.write(image_)
                     selected_file_name = ttmpfile.name
@@ -548,13 +557,14 @@ with d_rig:
                         result = client.predict(
                             composite_pil=handle_file(selected_file_name),
                             prompt=f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the avaliable free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing.""",
-                            gemini_api_key=API_KEY,
+                            gemini_api_key=TEXT_OVERLAY_API_KEY,
                             api_name="/process_image_and_prompt"
                         )
                         break  
                     except Exception as e:
                         error_msg = str(e)
                         if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
+                            st.toast("⚠️ Try to Place the other accounts Gemini API_KEY To continue on the textoverlay stack")
                             st.warning(f"Quota exhausted. Waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
                             time.sleep(60)
                         else:
@@ -595,6 +605,7 @@ with d_rig:
 with d_rig:
             if "image_total_list" in st.session_state:
                         total_ll = st.session_state["image_total_list"]
+                        st.toast("✅ Textoverlay Banners Generated Successfully")
                         for i,image in enumerate(total_ll):
                             
                          st.image(image,caption="Generated Based On Previous Tags",)
@@ -631,7 +642,7 @@ with d_rig:
 with d_lef:
 
     if st.button("Reset"):
-      st.toast("Click Twice to Reset the Content")
+      st.toast("ℹ️ Click Twice to Reset the sessions")
       st.session_state.img_btn_clicked = False
       st.session_state.img_already_generated = False
       st.session_state.text_image_generated = False
