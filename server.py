@@ -555,8 +555,8 @@ with d_rig:
                     except Exception as e:
                         error_msg = str(e)
                         if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-                            st.warning(f"Quota exhausted. Waiting 50 seconds before retrying... (Attempt {attempt+1}/2)")
-                            time.sleep(50)
+                            st.warning(f"Quota exhausted. Waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
+                            time.sleep(60)
                         else:
                             st.error(f"Unexpected error: {e}")
                             result = None
