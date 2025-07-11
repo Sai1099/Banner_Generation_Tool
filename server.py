@@ -198,7 +198,7 @@ with d_rig:
    Please ensure the AI response returns equal-length lists for all fields.
    """
     )
-    st.toast("⚠️ Click Again The Generate Tags Button.")
+    st.toast("⚠️ Refresh the page.")
   else:
        st.warning("Not generated")
 
