@@ -523,8 +523,13 @@ with d_lef:
                         select_option = st.radio(label=" ",options=[f"{i+1} " + data[f"title{i+1}"] + " "+" \n" + data[f"description{i+1}"] + "\n" for i in range(3)])  
                         if "sel_opt" not in st.session_state:
                             st.session_state["sel_opt"] = select_option 
-    st.text("if quota is not exceeded place the primary API_KEY if exceeds uses the secondary API_KEY from another Account") 
-    TEXT_OVERLAY_API_KEY = st.text_input("Enter the Gemini API KEY For TextOverlay",type="password")
+    st.divider()
+    st.markdown(
+        "*If your primary Gemini API key has exceeded its quota, you can use a secondary key from another account below.*"
+    )
+
+    TEXT_OVERLAY_API_KEY = st.text_input("🔑 Gemini API Key for Text Overlay (Secondary):", type="password")
+
     generate_text_on_the_image = st.button("Generate Text Based Banner")           
                 
 
