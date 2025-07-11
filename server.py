@@ -19,7 +19,7 @@ import threading
 import io
 import time
 
-
+chromadb.api.client.SharedSystemClient.clear_system_cache()
 
 st.set_page_config(page_title="Banner Creation Tool",page_icon="main_logo.png",layout="wide")
 #------------------------------------------------------------------------------------------------------------
@@ -48,6 +48,7 @@ d_lef,d_rig = st.columns(2)
 with d_lef:
  st.subheader("Enter_Credentials")
  API_KEY = st.text_input("Enter your GOOGLE_API_KEYS to continue generation:",type="password")
+ 
  if st.subheader("Tags"):
   data_bussiness = data_driv_df["Suggested Banner Type"].unique().tolist()
   biz_sel = st.selectbox("Choose the Bussiness:",options=data_bussiness)
