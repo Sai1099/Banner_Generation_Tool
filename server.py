@@ -381,12 +381,19 @@ with d_lef:
                 embedding_vector = model.encode(main_text_ll)
 
 
-                client = chromadb.CloudClient(
-                    api_key="ck-78tRNWSAkwpJ6szDmFFwkehi46q2FZb2v4Unz37zpT7w",
-                    tenant="4a4205c1-adf8-4989-8824-39983b450e41",
-                    database='Banner_Description_Recomm'
-                )
+               
 
+
+                client = chromadb.HttpClient(
+                ssl=True,
+                host='api.trychroma.com',
+                tenant='4a4205c1-adf8-4989-8824-39983b450e41',
+                database='Banner_Description_Recomm',
+                headers={
+                    'x-chroma-token': 'ck-pgjZMcSbd2EVfkcigADhcJ9YBvD1GBjkw8dbVWtEmds'
+                }
+                )
+                
                 collection = client.get_or_create_collection(name="Banner_recomm")
 
 
