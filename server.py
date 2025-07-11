@@ -9,17 +9,12 @@ import json
 import requests
 from PIL import Image,ImageOps,ImageDraw,ImageFont
 from io import BytesIO
-import sys
-import pysqlite3
-sys.modules['sqlite3'] = pysqlite3
-import chromadb
-from sentence_transformers import SentenceTransformer
 from gradio_client import Client,handle_file
 import threading
 import io
 import time
 
-chromadb.api.client.SharedSystemClient.clear_system_cache()
+
 
 st.set_page_config(page_title="Banner Creation Tool",page_icon="main_logo.png",layout="wide")
 #------------------------------------------------------------------------------------------------------------
@@ -373,95 +368,19 @@ with d_lef:
             st.toast("⚠️ Select the Images to continue")
         if selected and generate_text_overlay_content_btn and text_overlay_prompt:
             len_selected = st.session_state.get("length_total_records", 0)
-            if len_selected >= 1:
-                main_file = pd.read_csv("banner_data.csv", encoding='latin-1')
+            if len_selected >= 1 and "main_d" in st.session_state:
+                main_file = st.session_state["main_d"]
                 main_file = main_file.fillna('')
 
                 descriptions = main_file["Title"] + " " + main_file["Description1"] + " " + main_file["Description2"] + " " + main_file["Description3"]
                 banner_type = main_file["section"] + " " + main_file["subDivisionType"]
                 main_text = banner_type + " " + descriptions
-
-                main_text_ll = [str(text).strip() for text in main_text.to_list()]
-                banner_type_ll = [str(bt).strip() for bt in banner_type.to_list()]
-
-                model = SentenceTransformer('all-MiniLM-L6-v2')
-                embedding_vector = model.encode(main_text_ll)
-
-
-               
-
-
-                try:
-                    client = chromadb.PersistentClient(path="./chroma_db")
-                    print("Using local ChromaDB")
-                except:
-                    # Option 2: Cloud client with updated configuration
-                    client = chromadb.CloudClient(
-                        tenant="4a4205c1-adf8-4989-8824-39983b450e41",
-                        database="default",
-                        api_key="ck-78tRNWSAkwpJ6szDmFFwkehi46q2FZb2v4Unz3"
-                    )
-                    print("Using ChromaDB Cloud")
-
-
-                collection = client.get_or_create_collection(name="Banner_recomm")
-
-
-                existing_docs = collection.get(ids=None, include=["documents"])["documents"]
-                print(f"Total existing docs: {len(existing_docs)}")
-
-                ids_to_add = []
-                docs_to_add = []
-                embs_to_add = []
-                metas_to_add = []
-                 
-                for i in range(len(main_text_ll)):
-                    doc = main_text_ll[i]
-                    if doc not in existing_docs: 
-                        new_id = str(np.random.randint(1, 10000))
-                        while new_id in collection.get(ids=None, include=[])["ids"] or new_id in ids_to_add:
-                            new_id = str(np.random.randint(1, 10000))
-                        ids_to_add.append(new_id)
-                        docs_to_add.append(doc)
-                        embs_to_add.append(embedding_vector[i].tolist())
-                        metas_to_add.append({"banner_type": banner_type_ll[i]})
-
-                if ids_to_add:
-                    print(f"Adding {len(ids_to_add)} new documents...")
-                    collection.add(
-                        ids=ids_to_add,
-                        documents=docs_to_add,
-                        embeddings=embs_to_add,
-                        metadatas=metas_to_add
-                    )
-                    print(" Embeddings and documents added successfully!")
-                else:
-                    print(" All documents already exist.")
-
                 brief = text_overlay_prompt
 
-                qvec  = model.encode(brief).tolist()
 
-                top_k   = 5                     
-
-
-                qvec = model.encode(brief, convert_to_numpy=True).tolist()
-                res  = collection.query(
-                    query_embeddings=[qvec],  
-                    n_results=top_k,
-                    include=["documents", "distances", "metadatas"] 
-                )
-
-
-                ids        = res["ids"][0]         
-                texts      = res["documents"][0]   
-                distances  = res["distances"][0]   
-
-                for i, (bid, txt, d) in enumerate(zip(ids, texts, distances), 1):
-                    print(f"{i}. {bid}  (distance {d:.4f})\n   {txt}\n")
                 if API_KEY:
 
-                    human_message = "based on the data given following and the prompt please give me the 3 options for banner title and descriptions like title1 and description1 ,title2 etcc in ajson way don't miss anything give me the complete information.follow the output as title1 and description1 in json etcc. IMPORTANT: Return JSON in this EXACT format: {\"title1\":\"your title\", \"description1\":\"your description\", \"title2\":\"your title\", \"description2\":\"your description\", \"title3\":\"your title\", \"description3\":\"your description\"}. No nested objects, just direct key-value pairs." + str(texts) + " " + brief
+                    human_message = "based on the data given following and the prompt please give me the 3 options for banner title and descriptions like title1 and description1 ,title2 etcc in ajson way don't miss anything give me the complete information.follow the output as title1 and description1 in json etcc. IMPORTANT: Return JSON in this EXACT format: {\"title1\":\"your title\", \"description1\":\"your description\", \"title2\":\"your title\", \"description2\":\"your description\", \"title3\":\"your title\", \"description3\":\"your description\"}. No nested objects, just direct key-value pairs." + str(main_text) + " " + brief
 
                     prompt = [
                         (
@@ -558,7 +477,7 @@ with d_rig:
                 main_description = data_text[f"description{idsv}"]
 
                
-                for attempt in range(2): 
+                for attempt in range(2):
                     try:
                         result = client.predict(
                             composite_pil=handle_file(selected_file_name),
@@ -566,11 +485,22 @@ with d_rig:
                             gemini_api_key=TEXT_OVERLAY_API_KEY,
                             api_name="/process_image_and_prompt"
                         )
-                        break  
+                        break  # Success, exit retry loop
+
+                    except requests.exceptions.HTTPError as http_err:
+                        if http_err.response.status_code == 429:
+                            st.toast("⚠️ API Rate Limit Reached (429). Try using another API key.")
+                            st.warning(f"Too many requests — waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
+                            time.sleep(60)
+                        else:
+                            st.error(f"HTTP error: {http_err}")
+                            result = None
+                            break
+
                     except Exception as e:
                         error_msg = str(e)
-                        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-                            st.toast("⚠️ Try to Place the other accounts Gemini API_KEY To continue on the textoverlay stack")
+                        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                            st.toast("⚠️ Gemini API Quota Exhausted.")
                             st.warning(f"Quota exhausted. Waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
                             time.sleep(60)
                         else:
