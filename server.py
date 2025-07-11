@@ -384,16 +384,19 @@ with d_lef:
                
 
 
-                client = chromadb.HttpClient(
-                ssl=True,
-                host='api.trychroma.com',
-                tenant='4a4205c1-adf8-4989-8824-39983b450e41',
-                database='Banner_Description_Recomm',
-                headers={
-                    'x-chroma-token': 'ck-pgjZMcSbd2EVfkcigADhcJ9YBvD1GBjkw8dbVWtEmds'
-                }
-                )
-                
+                try:
+                    client = chromadb.PersistentClient(path="./chroma_db")
+                    print("Using local ChromaDB")
+                except:
+                    # Option 2: Cloud client with updated configuration
+                    client = chromadb.CloudClient(
+                        tenant="4a4205c1-adf8-4989-8824-39983b450e41",
+                        database="default",
+                        api_key="ck-78tRNWSAkwpJ6szDmFFwkehi46q2FZb2v4Unz3"
+                    )
+                    print("Using ChromaDB Cloud")
+
+
                 collection = client.get_or_create_collection(name="Banner_recomm")
 
 
