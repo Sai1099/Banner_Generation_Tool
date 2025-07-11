@@ -59,7 +59,8 @@ with d_lef:
 
   if st.button("Generate Tags Based on Previous Data") or  optional_prompt:
       
-      main_d = data_driv_df[data_driv_df["Suggested Banner Type"] == biz_sel]
+      main_d = data_driv_df[data_driv_df["Suggested Banner Type"] == biz_sel].sort_values(by="Total clicks",ascending = False)
+      main_d = data_driv_df
 
       if "main_d" not in st.session_state:
           st.session_state["main_d"] = main_d      
