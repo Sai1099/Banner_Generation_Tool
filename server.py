@@ -8,11 +8,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 import json
 import requests
 from PIL import Image,ImageOps,ImageDraw,ImageFont
+import io
 from io import BytesIO
 import threading
-import io
+
 import time
-import google as genai
+from google import genai
 from google.genai import types
 
 
@@ -454,6 +455,11 @@ with d_lef:
     generate_text_on_the_image = st.button("Generate Text Based Banner")           
                 
 
+
+
+# Configure the API key
+
+
 with d_rig:
     gen_total = []
     length_total_rec = st.session_state.get("length_total_records")
@@ -477,24 +483,28 @@ with d_rig:
                         main_title = data_text[f"title{idsv}"]
                         main_description = data_text[f"description{idsv}"]
 
-                        prompt=f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the avaliable free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance.""",
+                        prompt = f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the available free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance."""
+
+                        
                         client = genai.Client(api_key=TEXT_OVERLAY_API_KEY)
+                        
+                        
                         response = client.models.generate_content(
-                        model="gemini-2.0-flash-preview-image-generation",
-                        
+                            model="gemini-2.0-flash-preview-image-generation",
                             contents=[prompt, image],
-                        
-                        
-                        config=types.GenerateContentConfig(
-                                response_modalities=["TEXT", "IMAGE"]
-                        ),
+                            config=types.GenerateContentConfig(
+                            response_modalities=['TEXT', 'IMAGE']
+                            )
                         )
 
+                        
+
+                        # Process the response
                         for part in response.candidates[0].content.parts:
                             if part.text is not None:
-                              print(part.text)
+                                print(part.text)
                             elif part.inline_data is not None:
-                              image = Image.open(BytesIO((part.inline_data.data)))
+                                image = Image.open(BytesIO(part.inline_data.data))
                             
 
                         image_bytes = image
@@ -522,7 +532,6 @@ with d_rig:
                             gen_total.append(image)
 
                 except Exception as e:
-                   
                     error_msg = str(e).lower()
                     if "quota" in error_msg or "limit" in error_msg or "exceeded" in error_msg:
                         st.error(f"⚠️ API Quota Exhausted! Please try again later or check your API limits.")
@@ -536,6 +545,7 @@ with d_rig:
                         continue 
 
         st.session_state["image_total_list"] = gen_total
+
 
 
 with d_rig:
