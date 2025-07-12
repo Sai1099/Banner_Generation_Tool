@@ -12,4 +12,4 @@ numpy==1.26.4
 chromadb==0.6.1
 sentence-transformers
 gradio-client
-google-generativeai
+google-genai
