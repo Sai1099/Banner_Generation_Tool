@@ -71,7 +71,7 @@ with d_lef:
         
         llm = ChatGoogleGenerativeAI(
                                         model="gemini-2.0-flash",
-                                        temperature=1.5,
+                                        temperature=1.0,
                                         max_tokens=None,
                                         timeout=None,
                                         max_retries=2,
@@ -109,7 +109,7 @@ with d_lef:
         
         llm = ChatGoogleGenerativeAI(
                                     model="gemini-2.0-flash",
-                                    temperature=1.6,
+                                    temperature=1.0,
                                     max_tokens=None,
                                     timeout=None,
                                     max_retries=2,
@@ -260,7 +260,7 @@ with d_rig:
 
         llm = ChatGoogleGenerativeAI(
                                     model="gemini-2.5-pro",
-                                    temperature=1.7,
+                                    temperature=1.0,
                                     max_tokens=None,
                                     timeout=None,
                                     max_retries=2,
@@ -402,7 +402,7 @@ with d_lef:
                     
                     llm = ChatGoogleGenerativeAI(
                         model="gemini-2.0-flash-lite",
-                        temperature=1.5,
+                        temperature=1.0,
                         max_tokens=None,
                         timeout=None,
                         max_retries=2,
@@ -483,6 +483,7 @@ with d_rig:
                         model="gemini-2.0-flash-preview-image-generation",
                         
                             contents=[prompt, image],
+                            
                         
                         
                         config=types.GenerateContentConfig(
