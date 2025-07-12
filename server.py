@@ -9,10 +9,11 @@ import json
 import requests
 from PIL import Image,ImageOps,ImageDraw,ImageFont
 from io import BytesIO
-from gradio_client import Client,handle_file
 import threading
 import io
 import time
+from google import genai
+from google.genai import types
 
 
 
@@ -141,8 +142,8 @@ with d_lef:
   
   prompt_input_banner = st.text_input("Enter your banner prompt")
 
-  number_of_images = st.number_input("Enter no of images you want to generate",min_value=2,max_value=5)
-  styles = st.selectbox("Select Your Style",["Animated","Modern","Doddling","Typography Animation"])
+  number_of_images = st.number_input("Enter no of images you want to generate",min_value=2,max_value=4)
+  styles = st.selectbox("Select Your Style",["Animated","Modern","Doddling"])
 
   if "the_df_json" in st.session_state and styles and prompt_input_banner and number_of_images:
      
@@ -461,79 +462,78 @@ with d_rig:
     if select_option and generate_text_on_the_image and TEXT_OVERLAY_API_KEY:
         if length_total_rec >= 1:
             for i, image_ in enumerate(selected):
-              with st.spinner("💥 Adding Text Overlay To Images.."):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as ttmpfile:
-                    ttmpfile.write(image_)
-                    selected_file_name = ttmpfile.name
+                try:
+                    with st.spinner("💥 Adding Text Overlay To Images.."):
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as ttmpfile:
+                            ttmpfile.write(image_)
+                            selected_file_name = ttmpfile.name
+                
+                        image = Image.open(selected_file_name).convert("RGBA")
 
-                image = Image.open(selected_file_name).convert("RGBA")
-                client = Client("ameerazam08/Gemini-Image-Edit")
+                        str_option = str(select_option)
+                        main_idx_of_option = str_option.split()
+                        idsv = int(main_idx_of_option[0])
+                        data_text = st.session_state.get("the_main_ye_json")
+                        main_title = data_text[f"title{idsv}"]
+                        main_description = data_text[f"description{idsv}"]
 
-                str_option = str(select_option)
-                main_idx_of_option = str_option.split()
-                idsv = int(main_idx_of_option[0])
-                data_text = st.session_state.get("the_main_ye_json")
-                main_title = data_text[f"title{idsv}"]
-                main_description = data_text[f"description{idsv}"]
-
-               
-                for attempt in range(2):
-                    try:
-                        result = client.predict(
-                            composite_pil=handle_file(selected_file_name),
-                            prompt=f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the avaliable free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing.""",
-                            gemini_api_key=TEXT_OVERLAY_API_KEY,
-                            api_name="/process_image_and_prompt"
+                        prompt=f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the avaliable free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance.""",
+                        client = genai.Client(api_key=TEXT_OVERLAY_API_KEY)
+                        response = client.models.generate_content(
+                        model="gemini-2.0-flash-preview-image-generation",
+                        
+                            contents=[prompt, image],
+                        
+                        
+                        config=types.GenerateContentConfig(
+                                response_modalities=["TEXT", "IMAGE"]
+                        ),
                         )
-                        break  # Success, exit retry loop
 
-                    except requests.exceptions.HTTPError as http_err:
-                        if http_err.response.status_code == 429:
-                            st.toast("⚠️ API Rate Limit Reached (429). Try using another API key.")
-                            st.warning(f"Too many requests — waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
-                            time.sleep(60)
-                        else:
-                            st.error(f"HTTP error: {http_err}")
-                            result = None
-                            break
+                        for part in response.candidates[0].content.parts:
+                            if part.text is not None:
+                              print(part.text)
+                            elif part.inline_data is not None:
+                              image = Image.open(BytesIO((part.inline_data.data)))
+                            
 
-                    except Exception as e:
-                        error_msg = str(e)
-                        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-                            st.toast("⚠️ Gemini API Quota Exhausted.")
-                            st.warning(f"Quota exhausted. Waiting 60 seconds before retrying... (Attempt {attempt+1}/2)")
-                            time.sleep(60)
-                        else:
-                            st.error(f"Unexpected error: {e}")
-                            result = None
-                            break
+                        image_bytes = image
+                        if image_bytes:
+                            image = image_bytes.convert("RGBA")
+                            image = ImageOps.pad(image, (1280, 720), color=(0, 0, 0), centering=(0.5, 0.5))
 
-                if not result:
-                    continue
+                            logo_path = "BAJAJFINSV.NS_BIG.png"
+                            image_width, image_height = image.size
 
-                image_bytes = result[0][0]['image']
-                if image_bytes:
-                    image = Image.open(image_bytes).convert("RGBA")
-                    image = ImageOps.pad(image, (1280, 720), color=(0, 0, 0), centering=(0.5, 0.5))
+                            with open(logo_path, "rb") as file:
+                                logo = BytesIO(file.read())
 
-                    logo_path = "BAJAJFINSV.NS_BIG.png"
-                    image_width, image_height = image.size
+                            logo_img = Image.open(logo).convert("RGBA")
+                            aspect_ratio = (logo_img.height / logo_img.width)
+                            logo_new_width = 150
+                            logo_new_height = int(logo_new_width * aspect_ratio)
+                            logo_img = logo_img.resize((logo_new_width, logo_new_height), Image.Resampling.LANCZOS)
 
-                    with open(logo_path, "rb") as file:
-                        logo = BytesIO(file.read())
+                            padding_x = 20
+                            padding_y = 20
+                            position = (image_width - logo_img.width - padding_x, padding_y)
+                            image.paste(logo_img, position, mask=logo_img)
 
-                    logo_img = Image.open(logo).convert("RGBA")
-                    aspect_ratio = (logo_img.height / logo_img.width)
-                    logo_new_width = 150
-                    logo_new_height = int(logo_new_width * aspect_ratio)
-                    logo_img = logo_img.resize((logo_new_width, logo_new_height), Image.Resampling.LANCZOS)
+                            gen_total.append(image)
 
-                    padding_x = 20
-                    padding_y = 20
-                    position = (image_width - logo_img.width - padding_x, padding_y)
-                    image.paste(logo_img, position, mask=logo_img)
-
-                    gen_total.append(image)
+                except Exception as e:
+                   
+                    error_msg = str(e).lower()
+                    if "quota" in error_msg or "limit" in error_msg or "exceeded" in error_msg:
+                        st.error(f"⚠️ API Quota Exhausted! Please try again later or check your API limits.")
+                        st.info("💡 Tip: Consider upgrading your API plan or wait for quota reset.")
+                        break  
+                    elif "rate" in error_msg:
+                        st.warning(f"⏳ Rate limit reached. Please wait a moment before trying again.")
+                        break
+                    else:
+                        st.error(f"❌ Error processing image {i+1}: {str(e)}")
+                        continue 
 
         st.session_state["image_total_list"] = gen_total
 
