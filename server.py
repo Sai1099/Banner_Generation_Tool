@@ -12,8 +12,8 @@ from io import BytesIO
 import threading
 import io
 import time
-import google.generativeai as genai
-from google.generativeai import types  
+import google as genai
+from google.genai import types
 
 
 
@@ -478,14 +478,11 @@ with d_rig:
                         main_description = data_text[f"description{idsv}"]
 
                         prompt=f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the avaliable free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance.""",
-                        
-                        genai.configure(api_key=TEXT_OVERLAY_API_KEY)
-                        model = genai.GenerativeModel("gemini-2.0-flash-preview-image-generation")
-                        response = model.generate_content(
+                        client = genai.Client(api_key=TEXT_OVERLAY_API_KEY)
+                        response = client.models.generate_content(
                         model="gemini-2.0-flash-preview-image-generation",
                         
                             contents=[prompt, image],
-                            
                         
                         
                         config=types.GenerateContentConfig(
