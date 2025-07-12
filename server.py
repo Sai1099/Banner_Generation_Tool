@@ -12,7 +12,7 @@ from io import BytesIO
 import threading
 import io
 import time
-from google import genai
+import google.generativeai as genai
 from google.genai import types
 
 
