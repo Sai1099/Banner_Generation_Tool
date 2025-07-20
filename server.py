@@ -11,7 +11,8 @@ from PIL import Image,ImageOps,ImageDraw,ImageFont
 import io
 from io import BytesIO
 import threading
-
+from google.api_core.exceptions import InvalidArgument
+from langchain_core.exceptions import OutputParserException
 import time
 from google import genai
 from google.genai import types
@@ -43,120 +44,113 @@ main_top_df = (
 st.title("Generate Data Driven Banners using AI")
 d_lef,d_rig = st.columns(2)
 with d_lef:
- st.subheader("Enter_Credentials")
- API_KEY = st.text_input("Enter your GOOGLE_API_KEYS to continue generation:",type="password")
- if API_KEY:
-     st.toast("✅ Initialized Successfully")
- 
- if st.subheader("Tags"):
-  data_bussiness = data_driv_df["Suggested Banner Type"].unique().tolist()
-  biz_sel = st.selectbox("Choose the Bussiness:",options=data_bussiness)
+    st.subheader("Enter_Credentials")
+    API_KEY = st.text_input("Enter your GOOGLE_API_KEYS to continue generation:", type="password")
+    if API_KEY:
+        st.toast("✅ Initialized Successfully")
 
-  optional_prompt  = st.text_input("Additional Input to generate the tags")
+    if st.subheader("Tags"):
+        data_bussiness = data_driv_df["Suggested Banner Type"].unique().tolist()
+        biz_sel = st.selectbox("Choose the Bussiness:", options=data_bussiness)
 
-  if st.button("Generate Tags Based on Previous Data") or  optional_prompt:
-      
-      main_d = data_driv_df[data_driv_df["Suggested Banner Type"] == biz_sel].sort_values(by="Total clicks",ascending = False)
-     
+        optional_prompt = st.text_input("Additional Input to generate the tags")
 
-      if "main_d" not in st.session_state:
-          st.session_state["main_d"] = main_d      
-     
+        if st.button("Generate Tags Based on Previous Data") or optional_prompt:
 
-      asa = main_d["tags"].to_list()
-      if API_KEY:
-        os.environ["GOOGLE_API_KEY"] = API_KEY
+            main_d = data_driv_df[data_driv_df["Suggested Banner Type"] == biz_sel].sort_values(by="Total clicks", ascending=False)
+
+            if "main_d" not in st.session_state:
+                st.session_state["main_d"] = main_d
+
+            asa = main_d["tags"].to_list()
+            if API_KEY:
+                os.environ["GOOGLE_API_KEY"] = API_KEY
+
+                llm = ChatGoogleGenerativeAI(
+                    model="gemini-2.0-flash",
+                    temperature=1.0,
+                    max_tokens=None,
+                    timeout=None,
+                    max_retries=2,
+                )
+
+                human_messaged_mixture = f"""
+                    This is the list of tags: {asa} and if it the tags list is None Based on the theme asjust the tags to get the nice attractive image in that tags mention don't add the text and the logo and specify the objects will be placed in the right side of banner and the theme is {optional_prompt} and include the objects in the tags it self based on the theme 
+
+                    Based on this, please analyze and generate meaningful structured tags. 
+
+                    Return the output strictly in the following format:
+
+                    {{
+                    "Tag Name": [],
+                    "Tag Property": [],
+                    "Tag Values": []
+                    }}
+
+                    Make sure the output is a valid JSON object and all arrays are aligned by index and in the Colors tags please give me the colors with percentage. and make sure the tag names has equal no of tags amd tag properties have equal no of properties and tag values have equal no of values like len(tag names) = len(tag properties) = len(tag values)
+                """
+
+                prompt_for_tags_mixture = [
+                    (
+                        "system",
+                        """Let's Assume you are the best tags analyzer and tags merger based on the high performance and now you want to give me the best outperforming banner tags and based on that tags give me the more tags to improve the image and improve user engagement and don't include the types like doodling and animated etccmand please give me the analyzed tags should be very perfect  and the all tag names and tag properties and tag values will be equal"""
+                    ),
+                    (
+                        "human",
+                        human_messaged_mixture
+                    )
+                ]
+
+                try:
+                    resp_tag_mixture = llm.invoke(prompt_for_tags_mixture)
+                    main_tag_content = str(resp_tag_mixture.content)
+                    find_idx = main_tag_content.find("{")
+                    find_idx_l = main_tag_content.rfind("}")
+                    json_dat_for_tag_mix = main_tag_content[find_idx:find_idx_l + 1]
+
+                    if "the_df_json" not in st.session_state:
+                        st.session_state["the_df_json"] = json_dat_for_tag_mix
+
+                except InvalidArgument as e:
+                    st.error("Invalid Google API Key. Please check and try again.")
+                except OutputParserException as e:
+                    st.error("Could not parse the tags properly. Try again or change the prompt.")
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {e}")
+
+            else:
+                st.warning("Please enter your Google API key to continue.")
+
+
+    # Validate that all lists have the same length
+    generated_ban_image = None
+    
 
 
 
+    st.divider()
+    st.subheader("Banner Prompt")
+    
+
+
+
+    
+    prompt_input_banner = st.text_input("Enter your banner prompt")
+
+    number_of_images = st.number_input("Enter no of images you want to generate",min_value=2,max_value=4)
+    styles = st.selectbox("Select Your Style",["Animated","Modern","Doddling"])
+
+    if "the_df_json" in st.session_state and styles and prompt_input_banner and number_of_images:
         
-        llm = ChatGoogleGenerativeAI(
-                                        model="gemini-2.0-flash",
-                                        temperature=1.0,
-                                        max_tokens=None,
-                                        timeout=None,
-                                        max_retries=2,
-                                        
-                    
-                                    )
-        human_messaged_mixture = f"""
-            This is the list of tags: {asa} and if it the tags list is None Based on the theme asjust the tags to get the nice attractive image in that tags mention don't add the text and the logo and specify the objects will be placed in the right side of banner and the theme is {optional_prompt} and include the objects in the tags it self based on the theme 
+        generated_ban_image = st.button("Generate")
 
-            Based on this, please analyze and generate meaningful structured tags. 
-
-            Return the output strictly in the following format:
-
-            {{
-            "Tag Name": [],
-            "Tag Property": [],
-            "Tag Values": []
-            }}
-
-            Make sure the output is a valid JSON object and all arrays are aligned by index and in the Colors tags please give me the colors with percentage. and make sure the tag names has equal no of tags amd tag properties have equal no of properties and tag values has equal no of values like len(tag names) = len(tag properties) - len(tag values)
-            """
-                                
-        prompt_for_tags_mixture = [
-                        (
-                            "system",
-                            """Let's Assume you are the best tags analyzer and tags merger based on the high performance and now you want to give me the best outperforming banner tags and based on that tags give me the more tags to improve the image and improve user engagement and don't include the types like doodling and animated etccmand please give me the analyzed tags should be very perfect  and the all tag names and tag properties and tag values will be equal"""
-                        ),
-                        (
-                            "human",
-                                human_messaged_mixture
-                        )
-                        ] 
-
-
-        
-        llm = ChatGoogleGenerativeAI(
-                                    model="gemini-2.0-flash",
-                                    temperature=1.0,
-                                    max_tokens=None,
-                                    timeout=None,
-                                    max_retries=2,
-                
-                                )
-        resp_tag_mixture = llm.invoke(prompt_for_tags_mixture)
-        main_tag_content = str(resp_tag_mixture.content)
-        find_idx = main_tag_content.find("{")
-        find_idx_l = main_tag_content.rfind("}")
-        json_dat_for_tag_mix = main_tag_content[find_idx:find_idx_l+1]
-        
-        if "the_df_json" not in st.session_state:
-            st.session_state["the_df_json"] = json_dat_for_tag_mix
-      else:
-       st.warning("Please enter your Google API key to continue.")
-
-
-# Validate that all lists have the same length
-  generated_ban_image = None
-  
+    st.divider()
 
 
 
-  st.divider()
-  st.subheader("Banner Prompt")
-  
+            
 
-
-
-  
-  prompt_input_banner = st.text_input("Enter your banner prompt")
-
-  number_of_images = st.number_input("Enter no of images you want to generate",min_value=2,max_value=4)
-  styles = st.selectbox("Select Your Style",["Animated","Modern","Doddling"])
-
-  if "the_df_json" in st.session_state and styles and prompt_input_banner and number_of_images:
-     
-     generated_ban_image = st.button("Generate")
-
-  st.divider()
-
-
-
-          
-
-  st.subheader("Add TextOverlay to the Image")
+    st.subheader("Add TextOverlay to the Image")
 
 
 
@@ -483,7 +477,7 @@ with d_rig:
                         main_title = data_text[f"title{idsv}"]
                         main_description = data_text[f"description{idsv}"]
 
-                        prompt = f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the available free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance."""
+                        prompt = f"""Add "{main_title}" and "{main_description}" in Rubik bold font, white/black high contrast color. Place LEFT SIDE in free space or if there is no free space in the left side place in the available free space area and don't change the original image at all, NO OVERLAP with objects. Professional banner style, large readable text, proper spacing. CRITICAL: Ensure typography is crystal clear, sharp, and not blurry - use high resolution text rendering with anti-aliasing for maximum readability and professional appearance. and upscale the image background but don't change and upscale the persons eyes and faces if had """
 
                         
                         client = genai.Client(api_key=TEXT_OVERLAY_API_KEY)
