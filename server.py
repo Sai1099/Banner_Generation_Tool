@@ -13,6 +13,7 @@ from io import BytesIO
 import threading
 from google.api_core.exceptions import InvalidArgument
 from langchain_core.exceptions import OutputParserException
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 import time
 from google import genai
 from google.genai import types
@@ -47,7 +48,7 @@ with d_lef:
     st.subheader("Enter_Credentials")
     API_KEY = st.text_input("Enter your GOOGLE_API_KEYS to continue generation:", type="password")
     if API_KEY:
-        st.toast("✅ Initialized Successfully")
+        st.toast(" ✅ Initialized Successfully")
 
     if st.subheader("Tags"):
         data_bussiness = data_driv_df["Suggested Banner Type"].unique().tolist()
@@ -63,14 +64,15 @@ with d_lef:
                 st.session_state["main_d"] = main_d
 
             asa = main_d["tags"].to_list()
+
             if API_KEY:
                 os.environ["GOOGLE_API_KEY"] = API_KEY
 
                 llm = ChatGoogleGenerativeAI(
                     model="gemini-2.0-flash",
                     temperature=1.0,
-                    max_tokens=None,
-                    timeout=None,
+                    max_tokens=2048,  # Avoid None, provide a reasonable default
+                    timeout=60,       # Avoid None
                     max_retries=2,
                 )
 
@@ -111,12 +113,14 @@ with d_lef:
                     if "the_df_json" not in st.session_state:
                         st.session_state["the_df_json"] = json_dat_for_tag_mix
 
+                except ChatGoogleGenerativeAIError as e:
+                    st.error("Google Generative AI error occurred. Please check your API key or prompt.")
                 except InvalidArgument as e:
-                    st.error("Invalid Google API Key. Please check and try again.")
+                    st.error("Invalid argument sent to Google API. Please review your inputs.")
                 except OutputParserException as e:
-                    st.error("Could not parse the tags properly. Try again or change the prompt.")
+                    st.error("Output could not be parsed. Please refine the prompt or structure.")
                 except Exception as e:
-                    st.error(f"An unexpected error occurred: {e}")
+                    st.error(f"An unexpected error occurred: {str(e)}")
 
             else:
                 st.warning("Please enter your Google API key to continue.")
