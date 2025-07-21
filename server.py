@@ -442,6 +442,8 @@ with d_lef:
                        
                         select_option = st.radio(label=" ",options=[f"{i+1} " + data[f"title{i+1}"] + " "+" \n" + data[f"description{i+1}"] + "\n" for i in range(3)])  
                         if "sel_opt" not in st.session_state:
+                            st.session_state["sel_opt"] = select_option
+                        else:
                             st.session_state["sel_opt"] = select_option 
     st.divider()
     st.markdown(
