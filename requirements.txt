@@ -1,0 +1,17 @@
+langchain-google-genai 
+dotenv
+pandas
+pandasql
+langchain
+streamlit 
+easydev
+Pillow
+requests
+protobuf==3.20.3
+numpy==1.26.4
+chromadb==0.6.1
+sentence-transformers
+gradio-client
+google-genai
+streamlit-oauth
+langchain
