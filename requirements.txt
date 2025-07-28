@@ -13,3 +13,5 @@ chromadb==0.6.1
 sentence-transformers
 gradio-client
 google-genai
+streamlit-oauth
+langchain
