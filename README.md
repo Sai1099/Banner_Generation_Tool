@@ -63,6 +63,3 @@ This project leverages **LLMs (Gemini 2.5 Pro)** for intelligent tagging and cop
 - Businesses seeking faster **A/B testing** of banners.  
 - AI-assisted **creative workflow** for ads and notifications.  
 
----
-
-## 📂 Project Structure
